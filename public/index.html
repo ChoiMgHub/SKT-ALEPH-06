@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="계획과 실제 실행을 기록하고 근거를 보며 돌아보는 공개 다이어리">
+  <title>플랜드씨 다이어리 · 계획과 실제</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div><p class="eyebrow">SKT ALEPH · CHAPTER 06</p><h1>플랜드씨 다이어리</h1><p class="subtitle">계획하고, 실제로 해 보고, 기록을 근거로 돌아보기</p></div>
+      <span class="hero-mark" aria-hidden="true">P<span>→</span>D<span>→</span>S</span>
+    </header>
+
+    <aside class="notice" role="note"><strong>공개 안내</strong><span>지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요.</span></aside>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+
+    <nav class="steps" aria-label="화면 이동">
+      <a href="#plans">01 계획</a><a href="#tasks">02 할 일</a><a href="#execution">03 실제</a><a href="#review">04 돌아보기</a>
+    </nav>
+
+    <main>
+      <section id="plans" class="section">
+        <div class="section-head"><div><p class="eyebrow">01 · PLAN</p><h2>계획 세우기</h2><p>예상과 성공 기준을 먼저 적고, 바뀐 계획은 이력으로 남깁니다.</p></div><button type="button" id="new-plan" class="secondary">새 계획</button></div>
+        <div class="grid two">
+          <form id="plan-form" class="panel">
+            <input type="hidden" name="id">
+            <label>계획 이름 <input name="title" maxlength="120" required placeholder="예: 6장 과제 완성하기"></label>
+            <div class="fields"><label>시작일 <input name="start_date" type="date" required></label><label>종료일 <input name="end_date" type="date" required></label></div>
+            <div class="fields"><label>우선순위 <select name="priority"><option>보통</option><option>높음</option><option>낮음</option></select></label><label>예상 시간(분) <input name="expected_minutes" type="number" min="0" max="1000000" required value="120"></label></div>
+            <label>성공 기준 <textarea name="success_criteria" maxlength="1000" required placeholder="무엇이 되면 완료인가요?"></textarea></label>
+            <button class="primary" type="submit">계획 저장하기</button>
+          </form>
+          <div class="panel"><h3>저장된 계획</h3><div id="plan-list" class="list empty">아직 계획이 없습니다.</div><h3 class="subhead">고치기 전 내용</h3><div id="revision-list" class="list empty">계획을 수정하면 이전 값이 여기에 남습니다.</div></div>
+        </div>
+      </section>
+
+      <section id="tasks" class="section">
+        <div class="section-head"><div><p class="eyebrow">02 · DO</p><h2>할 일 다루기</h2><p>계획에 연결하고, 찾고, 정렬하고, 상태를 바꿉니다.</p></div></div>
+        <div class="grid two">
+          <form id="task-form" class="panel">
+            <h3 id="task-form-title">할 일 추가</h3><input type="hidden" name="id">
+            <label>연결할 계획 <select name="plan_id" id="task-plan" required></select></label>
+            <label>할 일 <input name="title" maxlength="160" required placeholder="예: 앱 기본 화면 만들기"></label>
+            <div class="fields"><label>마감 일시 <input name="due_at" type="datetime-local"></label><label>예상 시간(분) <input name="expected_minutes" type="number" min="0" max="1000000" required value="30"></label></div>
+            <div class="fields"><label>우선순위 <select name="priority"><option>보통</option><option>높음</option><option>낮음</option></select></label><label>분류 <input name="category" maxlength="50" required value="과제"></label></div>
+            <label>상태 <select name="status"><option value="todo">할 일</option><option value="doing">진행 중</option><option value="done">완료</option><option value="blocked">막힘</option></select></label>
+            <label>막힌 이유 <input name="blocked_reason" maxlength="500" placeholder="상태가 막힘일 때 적어 주세요"></label>
+            <div class="button-row"><button class="primary" type="submit">할 일 저장하기</button><button class="secondary" type="button" id="cancel-task">입력 비우기</button></div>
+          </form>
+          <div class="panel"><h3>할 일 찾기</h3><div class="filters"><label>검색 <input id="task-search" type="search" placeholder="제목 또는 분류"></label><label>상태 <select id="task-filter"><option value="all">전체</option><option value="todo">할 일</option><option value="doing">진행 중</option><option value="done">완료</option><option value="blocked">막힘</option><option value="overdue">지연</option></select></label><label>정렬 기준 <select id="task-sort"><option value="due">마감 빠른 순</option><option value="priority">우선순위 높은 순</option><option value="created">최근 만든 순</option><option value="title">이름순</option></select></label></div><p id="task-result-label" class="muted"></p><div id="task-list" class="list empty">아직 할 일이 없습니다.</div></div>
+        </div>
+      </section>
+
+      <section id="execution" class="section">
+        <div class="section-head"><div><p class="eyebrow">03 · RECORD</p><h2>실제로 한 일</h2><p>계획값을 바꾸지 않고 시작·종료·실제 시간을 따로 남깁니다.</p></div></div>
+        <div class="grid two">
+          <form id="log-form" class="panel"><label>연결할 할 일 <select name="task_id" id="log-task" required></select></label><div class="fields"><label>시작 일시 <input name="started_at" type="datetime-local" required></label><label>종료 일시 <input name="ended_at" type="datetime-local" required></label></div><label>계획과 달랐다면 이유 <textarea name="difference_reason" maxlength="500" placeholder="같았다면 비워 두어도 됩니다."></textarea></label><p class="hint">실제 시간은 시작·종료 시각으로 계산합니다. 저장한 기록은 계획의 예상 시간을 덮어쓰지 않습니다.</p><button class="primary" type="submit">실행 기록 남기기</button></form>
+          <div class="panel"><h3>실행 기록</h3><div id="log-list" class="list empty">아직 실행 기록이 없습니다.</div></div>
+        </div>
+      </section>
+
+      <section id="review" class="section">
+        <div class="section-head"><div><p class="eyebrow">04 · SEE</p><h2>돌아보기</h2><p>숫자를 누르면 어떤 기록에서 나온 값인지 볼 수 있습니다.</p></div></div>
+        <div id="summary" class="stat-grid"></div>
+        <div id="evidence" class="panel evidence" tabindex="-1"><h3>숫자의 근거</h3><p class="muted">위 숫자를 눌러 근거 기록을 확인하세요.</p></div>
+        <form id="reflection-form" class="panel reflection"><h3>다음 계획으로 넘길 한 줄</h3><label>계획 <select name="plan_id" id="reflection-plan" required></select></label><label>돌아보고 정한 다음 행동 <input name="next_step" maxlength="500" placeholder="예: 예상 시간을 조금 더 넉넉하게 잡는다"></label><button class="primary" type="submit">한 줄 저장하기</button><div id="reflection-list" class="list"></div></form>
+      </section>
+
+      <section id="export" class="section compact"><div><p class="eyebrow">DATA</p><h2>내보내기</h2><p>서버에 저장된 계획·이력·할 일·실행 기록·돌아보기를 JSON 파일 하나로 받습니다.</p></div><a class="primary link-button" href="/api/export" download="aleph-diary-export.json">전체 자료 파일로 받기</a></section>
+    </main>
+    <footer>플랜드씨 다이어리 · 계획 → 실제 → 돌아보기</footer>
+  </div>
+</body>
+</html>
+
