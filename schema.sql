@@ -52,4 +52,3 @@ CREATE TABLE IF NOT EXISTS reflections (
   next_step TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-

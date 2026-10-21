@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/build-worker.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:local": "wrangler d1 execute aleph-diary --local --file=./schema.sql",
@@ -14,4 +15,3 @@
     "wrangler": "^4.0.0"
   }
 }
-

@@ -88,4 +88,3 @@ test('status updates are repeatable and completed tasks are not counted as overd
   assert.equal(exportData.schema_version, 'aleph-diary-v1');
   assert.equal(exportData.tasks.length, 1);
 });
-

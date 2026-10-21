@@ -272,4 +272,3 @@ reflectionForm.addEventListener('submit', async event => {
 });
 
 refresh().catch(error => show(`서버 데이터를 읽지 못했습니다: ${error.message}`, true));
-
