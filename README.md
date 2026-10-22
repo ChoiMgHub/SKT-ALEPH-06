@@ -54,6 +54,10 @@
 
 Node.js **22.13 이상**을 사용합니다. `package-lock.json`을 포함하므로 `npm ci`로 같은 의존성을 설치합니다.
 
+테스트용 Ajv는 알려진 취약점 수정 버전인 8.20.0으로 고정했습니다. 설치 스크립트는 배포 도구에 필요한 `esbuild@0.28.2`와 `workerd@1.20261019.1` 두 버전만 `allowScripts`에 명시했습니다. npm 자체의 새 주요 버전 안내나 `whatwg-encoding` 폐기 예정 안내는 설치 실패 메시지가 아닙니다. 자동으로 `npm audit fix --force`를 적용하지 않습니다.
+
+Windows PowerShell에서는 아래 명령의 `npm`·`npx`를 각각 `npm.cmd`·`npx.cmd`로 실행할 수 있습니다. Bash용 `export PATH=...`는 PowerShell에서 사용하지 않습니다.
+
 ```bash
 npm ci
 npm test

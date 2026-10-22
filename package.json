@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.13.0" },
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "build": "node scripts/build-worker.mjs",
     "dev": "wrangler dev",
@@ -13,9 +15,13 @@
     "test": "node --test"
   },
   "devDependencies": {
-    "ajv": "8.17.1",
+    "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "jsdom": "26.1.0",
     "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261019.1": true
   }
 }
