@@ -52,3 +52,21 @@ CREATE TABLE IF NOT EXISTS reflections (
   next_step TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- 완료 이력은 실행 시간 기록과 구분한다. 중복 완료 요청도 할 일당 한 건만 남긴다.
+CREATE TABLE IF NOT EXISTS task_completions (
+  task_id TEXT PRIMARY KEY REFERENCES tasks(id),
+  completed_at TEXT NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('status_transition', 'existing_status'))
+);
+-- 기존 완료 자료의 시각을 새로 만들어 내지 않고 마지막 수정 시각과 출처를 보존한다.
+INSERT OR IGNORE INTO task_completions (task_id, completed_at, source)
+SELECT id, updated_at, 'existing_status' FROM tasks WHERE status = 'done';
+
+CREATE TABLE IF NOT EXISTS reflection_links (
+  target_plan_id TEXT PRIMARY KEY REFERENCES plans(id),
+  source_plan_id TEXT NOT NULL REFERENCES plans(id),
+  carried_text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+

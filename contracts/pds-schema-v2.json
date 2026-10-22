@@ -1,0 +1,471 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ChoiMgHub/SKT-ALEPH-06/contracts/pds-schema-v2.json",
+  "title": "플랜드씨 다이어리 최종 데이터 명세 v2",
+  "description": "첨부 과제 안내의 경로에 맞춰 현재 구현을 문서화한 프로젝트 명세. 별도 공식 원본 명세와의 동일성을 주장하지 않는다.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "pds-schema-v2"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/plan"
+      }
+    },
+    "plan_revisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/revision"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      }
+    },
+    "execution_logs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/log"
+      }
+    },
+    "reflections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reflection"
+      }
+    },
+    "task_completions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/completion"
+      }
+    },
+    "reflection_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/link"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "summaries": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/summary"
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schema_version",
+    "exported_at",
+    "plans",
+    "plan_revisions",
+    "tasks",
+    "execution_logs",
+    "reflections",
+    "task_completions",
+    "reflection_links",
+    "summary",
+    "summaries",
+    "evaluated_at"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "plan": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "priority": {
+          "enum": [
+            "낮음",
+            "보통",
+            "높음"
+          ]
+        },
+        "success_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "expected_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "start_date",
+        "end_date",
+        "priority",
+        "success_criteria",
+        "expected_minutes",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "revision": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "snapshot_json": {
+          "type": "string",
+          "description": "수정 직전 plan 전체를 직렬화한 JSON 문자열. plan_id는 바뀌지 않는다."
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plan_id",
+        "snapshot_json",
+        "recorded_at"
+      ],
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "enum": [
+            "낮음",
+            "보통",
+            "높음"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "expected_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "todo",
+            "doing",
+            "done",
+            "blocked"
+          ]
+        },
+        "blocked_reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "deleted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plan_id",
+        "title",
+        "due_at",
+        "priority",
+        "category",
+        "expected_minutes",
+        "status",
+        "blocked_reason",
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "log": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actual_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "difference_reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "request_id",
+        "task_id",
+        "started_at",
+        "ended_at",
+        "actual_minutes",
+        "difference_reason",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "reflection": {
+      "type": "object",
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "next_step": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "plan_id",
+        "next_step",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "completion": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "enum": [
+            "status_transition",
+            "existing_status"
+          ]
+        }
+      },
+      "required": [
+        "task_id",
+        "completed_at",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "properties": {
+        "target_plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "carried_text": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "target_plan_id",
+        "source_plan_id",
+        "carried_text",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "plans": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "open_tasks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overdue": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actual_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "difference_minutes": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "plans",
+        "open_tasks",
+        "completed",
+        "overdue",
+        "blocked",
+        "expected_minutes",
+        "actual_minutes",
+        "difference_minutes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-storage": {
+    "database": "Cloudflare D1 / SQLite",
+    "tables": [
+      "plans",
+      "plan_revisions",
+      "tasks",
+      "execution_logs",
+      "reflections",
+      "task_completions",
+      "reflection_links"
+    ]
+  },
+  "x-rules": {
+    "identity": "UUID 문자열을 저장하고 새로고침 시 같은 ID를 사용한다.",
+    "date": "계획 기간은 시간대 없는 YYYY-MM-DD 달력 날짜. 실제로 존재하는 날짜이며 종료일 >= 시작일.",
+    "timestamp": "마감·실행·저장 시각은 UTC ISO 8601 문자열. 화면 입력·표시는 현재 기기 시간대이며 API가 받은 명시적 시간대를 UTC로 정규화한다.",
+    "unit": "모든 *_minutes 값은 정수 분. 실제 시간 = round((종료-시작)/60000), 종료 >= 시작.",
+    "relations": [
+      "tasks.plan_id -> plans.id",
+      "plan_revisions.plan_id -> plans.id",
+      "execution_logs.task_id -> tasks.id",
+      "task_completions.task_id -> tasks.id (PRIMARY KEY)",
+      "reflections.plan_id -> plans.id (PRIMARY KEY)",
+      "reflection_links.source_plan_id -> plans.id",
+      "reflection_links.target_plan_id -> plans.id (PRIMARY KEY)"
+    ],
+    "idempotency": "execution_logs.request_id UNIQUE; 완료 이력은 task_id PRIMARY KEY. 상태 갱신과 완료 이력 추가는 하나의 트랜잭션. 되돌리기 후 다시 완료해도 최초 이력 한 건만 유지.",
+    "migration": "schema.sql은 기존 테이블을 삭제하지 않는다. 기존 done 항목의 updated_at을 existing_status 출처로 표시하며 실제 작업 시간을 만들지 않는다.",
+    "review_scope": "summaries[plan_id]는 그 계획에 연결된 삭제하지 않은 할 일과 해당 실행 기록만 대상으로 한다. summary는 모든 계획을 대상으로 한다.",
+    "counts": "UI의 계획 수는 open_tasks. plans는 계획 묶음 수. completed는 현재 done 수. overdue는 미완료이며 due_at < evaluated_at. blocked는 blocked_reason이 비어 있지 않은 할 일 수.",
+    "duration": "expected_minutes = 대상 할 일 예상 시간 합계; actual_minutes = 해당 할 일 실행 기록 합계; difference_minutes = actual_minutes - expected_minutes. 빈 집합은 모두 0. 계획 묶음의 예상값은 이 합계에 중복 가산하지 않는다.",
+    "carry": "다음 계획 저장 시 reflection_links에 원본 계획 ID·다음 계획 ID·당시 돌아보기 문장을 보존한다. 이후 돌아보기 수정으로 연결 당시 문장을 덮어쓰지 않는다.",
+    "export": "삭제한 할 일과 그 실행·완료 이력도 내보내기에 보존한다. 현재 집계에서는 삭제된 할 일을 제외한다."
+  }
+}

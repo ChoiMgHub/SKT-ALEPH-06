@@ -14,7 +14,8 @@ const staticCode = `const STATIC_ASSETS = ${JSON.stringify(assets)};\n` +
   `function serveAsset(request) { const path = new URL(request.url).pathname; const asset = STATIC_ASSETS[path];` +
   ` if (!asset) return new Response('찾을 수 없습니다.', {status:404});` +
   ` return new Response(asset.body, {headers:{'content-type':asset.type,'x-content-type-options':'nosniff',` +
-  `'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; object-src 'none'"}}); }\n`;
+  `'referrer-policy':'no-referrer','x-frame-options':'DENY',` +
+  `'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'"}}); }\n`;
 const source = read('src/worker.js');
 const original = "if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);";
 if (!source.includes(original)) throw new Error('Static asset hook was not found.');
@@ -22,3 +23,4 @@ const output = staticCode + source.replace(original, "if (!url.pathname.startsWi
 mkdirSync(resolve(root, 'dist'), { recursive: true });
 writeFileSync(resolve(root, 'dist/worker.js'), output);
 console.log(`Built dist/worker.js (${Buffer.byteLength(output)} bytes)`);
+

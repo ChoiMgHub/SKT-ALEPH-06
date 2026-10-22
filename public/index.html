@@ -28,6 +28,8 @@
         <div class="grid two">
           <form id="plan-form" class="panel">
             <input type="hidden" name="id">
+            <input type="hidden" name="source_reflection_plan_id">
+            <p id="source-reflection-note" class="hint" hidden></p>
             <label>계획 이름 <input name="title" maxlength="120" required placeholder="예: 6장 과제 완성하기"></label>
             <div class="fields"><label>시작일 <input name="start_date" type="date" required></label><label>종료일 <input name="end_date" type="date" required></label></div>
             <div class="fields"><label>우선순위 <select name="priority"><option>보통</option><option>높음</option><option>낮음</option></select></label><label>예상 시간(분) <input name="expected_minutes" type="number" min="0" max="1000000" required value="120"></label></div>
@@ -51,7 +53,7 @@
             <label>막힌 이유 <input name="blocked_reason" maxlength="500" placeholder="상태가 막힘일 때 적어 주세요"></label>
             <div class="button-row"><button class="primary" type="submit">할 일 저장하기</button><button class="secondary" type="button" id="cancel-task">입력 비우기</button></div>
           </form>
-          <div class="panel"><h3>할 일 찾기</h3><div class="filters"><label>검색 <input id="task-search" type="search" placeholder="제목 또는 분류"></label><label>상태 <select id="task-filter"><option value="all">전체</option><option value="todo">할 일</option><option value="doing">진행 중</option><option value="done">완료</option><option value="blocked">막힘</option><option value="overdue">지연</option></select></label><label>정렬 기준 <select id="task-sort"><option value="due">마감 빠른 순</option><option value="priority">우선순위 높은 순</option><option value="created">최근 만든 순</option><option value="title">이름순</option></select></label></div><p id="task-result-label" class="muted"></p><div id="task-list" class="list empty">아직 할 일이 없습니다.</div></div>
+          <div class="panel"><h3>할 일 찾기</h3><div class="filters"><label>검색 <input id="task-search" type="search" placeholder="제목 또는 분류"></label><label>상태 <select id="task-filter"><option value="all">전체</option><option value="todo">할 일</option><option value="doing">진행 중</option><option value="done">완료</option><option value="blocked">막힘</option><option value="overdue">지연</option></select></label><label>정렬 기준 <select id="task-sort"><option value="due">마감 빠른 순</option><option value="priority">우선순위 높은 순</option><option value="created">최근 만든 순</option><option value="title">이름순</option></select></label></div><p id="task-result-label" class="muted"></p><p id="task-sort-rule" class="hint"></p><div id="task-list" class="list empty">아직 할 일이 없습니다.</div></div>
         </div>
       </section>
 
@@ -59,12 +61,15 @@
         <div class="section-head"><div><p class="eyebrow">03 · RECORD</p><h2>실제로 한 일</h2><p>계획값을 바꾸지 않고 시작·종료·실제 시간을 따로 남깁니다.</p></div></div>
         <div class="grid two">
           <form id="log-form" class="panel"><label>연결할 할 일 <select name="task_id" id="log-task" required></select></label><div class="fields"><label>시작 일시 <input name="started_at" type="datetime-local" required></label><label>종료 일시 <input name="ended_at" type="datetime-local" required></label></div><label>계획과 달랐다면 이유 <textarea name="difference_reason" maxlength="500" placeholder="같았다면 비워 두어도 됩니다."></textarea></label><p class="hint">실제 시간은 시작·종료 시각으로 계산합니다. 저장한 기록은 계획의 예상 시간을 덮어쓰지 않습니다.</p><button class="primary" type="submit">실행 기록 남기기</button></form>
-          <div class="panel"><h3>실행 기록</h3><div id="log-list" class="list empty">아직 실행 기록이 없습니다.</div></div>
+          <div class="panel"><h3>실행 기록</h3><p class="hint">입력·표시는 현재 기기의 시간대를 따릅니다. 실제 시간 단위는 분이며, 초 단위 차이는 가장 가까운 분으로 반올림합니다.</p><div id="log-list" class="list empty">아직 실행 기록이 없습니다.</div><h3 class="subhead">완료 이력</h3><p class="hint">할 일당 최초 완료 한 건을 보존합니다. 되돌리면 현재 완료 집계에서는 빠지지만 이력은 남습니다. 완료 이력은 실제 작업 시간을 뜻하지 않습니다.</p><div id="completion-list" class="list"></div></div>
         </div>
       </section>
 
       <section id="review" class="section">
         <div class="section-head"><div><p class="eyebrow">04 · SEE</p><h2>돌아보기</h2><p>숫자를 누르면 어떤 기록에서 나온 값인지 볼 수 있습니다.</p></div></div>
+        <label class="review-selector">돌아볼 계획 <select id="review-plan"></select></label>
+        <p id="review-evaluated-at" class="hint"></p>
+        <p class="hint">계획 수는 선택한 계획에 연결된 삭제하지 않은 할 일 수입니다. 예상 시간은 그 할 일들의 합계, 실제 시간은 그 할 일에 연결된 실행 기록의 합계입니다. 차이 = 실제 − 예상. 기록하지 않은 시간은 포함하지 않습니다.</p>
         <div id="summary" class="stat-grid"></div>
         <div id="evidence" class="panel evidence" tabindex="-1"><h3>숫자의 근거</h3><p class="muted">위 숫자를 눌러 근거 기록을 확인하세요.</p></div>
         <form id="reflection-form" class="panel reflection"><h3>다음 계획으로 넘길 한 줄</h3><label>계획 <select name="plan_id" id="reflection-plan" required></select></label><label>돌아보고 정한 다음 행동 <input name="next_step" maxlength="500" placeholder="예: 예상 시간을 조금 더 넉넉하게 잡는다"></label><button class="primary" type="submit">한 줄 저장하기</button><div id="reflection-list" class="list"></div></form>
@@ -72,7 +77,8 @@
 
       <section id="export" class="section compact"><div><p class="eyebrow">DATA</p><h2>내보내기</h2><p>서버에 저장된 계획·이력·할 일·실행 기록·돌아보기를 JSON 파일 하나로 받습니다.</p></div><a class="primary link-button" href="/api/export" download="aleph-diary-export.json">전체 자료 파일로 받기</a></section>
     </main>
-    <footer>플랜드씨 다이어리 · 계획 → 실제 → 돌아보기</footer>
+    <footer>플랜드씨 다이어리 · 계획 → 실제 → 돌아보기 · v2</footer>
   </div>
 </body>
 </html>
+

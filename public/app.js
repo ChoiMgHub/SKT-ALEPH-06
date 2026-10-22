@@ -1,7 +1,8 @@
 const $ = id => document.getElementById(id);
 const planForm = $('plan-form'), taskForm = $('task-form'), logForm = $('log-form'), reflectionForm = $('reflection-form');
-let state = { plans: [], plan_revisions: [], tasks: [], execution_logs: [], reflections: [], summary: {} };
+let state = { plans: [], plan_revisions: [], tasks: [], execution_logs: [], reflections: [], task_completions: [], reflection_links: [], summary: {}, summaries: {} };
 let selectedPlanId = null;
+let reviewPlanId = null;
 let newPlanMode = false;
 let evidenceKind = null;
 let pendingLogRequestId = null;
@@ -16,6 +17,7 @@ function add(parent, ...children) { parent.append(...children); return parent; }
 function formValue(form, key) { return form.elements.namedItem(key).value; }
 function setFormValue(form, key, value) { form.elements.namedItem(key).value = value ?? ''; }
 function minutesText(n) { const value = Number(n || 0); return value >= 60 ? `${Math.floor(value / 60)}시간 ${value % 60}분` : `${value}분`; }
+function differenceText(n) { const value = Number(n || 0); return `${value > 0 ? '+' : value < 0 ? '−' : ''}${minutesText(Math.abs(value))}`; }
 function dateText(value) { return value ? new Date(value).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }) : '마감 없음'; }
 function dateOnlyText(value) { return value || '날짜 없음'; }
 function localInput(iso) {
@@ -37,6 +39,7 @@ async function api(path, options = {}) {
 async function refresh() {
   state = await api('/api/state');
   if (!state.plans.some(p => p.id === selectedPlanId)) selectedPlanId = state.plans[0]?.id || null;
+  if (!state.plans.some(p => p.id === reviewPlanId)) reviewPlanId = selectedPlanId;
   renderAll();
 }
 async function run(action, success) {
@@ -48,15 +51,28 @@ function badge(text, className = '') { return node('span', `badge ${className}`,
 function planName(id) { return state.plans.find(p => p.id === id)?.title || '삭제된 계획'; }
 function taskName(id) { return state.tasks.find(t => t.id === id)?.title || '삭제된 할 일'; }
 function activeTasks() { return state.tasks.filter(t => !t.deleted_at); }
-function isOverdue(task) { return task.status !== 'done' && task.due_at && Date.parse(task.due_at) < Date.now(); }
+function isOverdue(task) { return task.status !== 'done' && task.due_at && Date.parse(task.due_at) < Date.parse(state.evaluated_at); }
+function reviewTasks() { return activeTasks().filter(t => t.plan_id === reviewPlanId); }
+function recordLink(label, id) {
+  const link = node('a', 'record-link', label); link.href = `#${id}`;
+  link.addEventListener('click', event => {
+    event.preventDefault();
+    if (id.startsWith('task-')) { $('task-search').value = ''; $('task-filter').value = 'all'; renderTasks(); }
+    const target = $(id);
+    if (target) { target.scrollIntoView({ block: 'center' }); target.focus(); }
+  });
+  return link;
+}
 function statusText(status) { return { todo: '할 일', doing: '진행 중', done: '완료', blocked: '막힘' }[status] || status; }
 function button(text, className, handler) { const b = node('button', className, text); b.type = 'button'; b.addEventListener('click', handler); return b; }
 
 function fillPlan(plan) {
   setFormValue(planForm, 'id', plan?.id);
+  setFormValue(planForm, 'source_reflection_plan_id', '');
+  $('source-reflection-note').hidden = true;
   setFormValue(planForm, 'title', plan?.title);
-  setFormValue(planForm, 'start_date', plan?.start_date || new Date().toISOString().slice(0, 10));
-  setFormValue(planForm, 'end_date', plan?.end_date || new Date().toISOString().slice(0, 10));
+  setFormValue(planForm, 'start_date', plan?.start_date || localInput(new Date().toISOString()).slice(0, 10));
+  setFormValue(planForm, 'end_date', plan?.end_date || localInput(new Date().toISOString()).slice(0, 10));
   setFormValue(planForm, 'priority', plan?.priority || '보통');
   setFormValue(planForm, 'success_criteria', plan?.success_criteria);
   setFormValue(planForm, 'expected_minutes', plan?.expected_minutes ?? 120);
@@ -66,10 +82,14 @@ function renderPlans() {
   if (!state.plans.length) empty(list, '아직 계획이 없습니다. 첫 계획을 저장해 주세요.');
   for (const plan of state.plans) {
     const card = node('article', 'item');
+    card.id = `plan-${plan.id}`; card.tabIndex = -1;
     const top = node('div', 'item-top');
     add(top, node('strong', '', plan.title), badge(plan.priority));
     add(card, top, node('p', '', `${dateOnlyText(plan.start_date)} ~ ${dateOnlyText(plan.end_date)} · 예상 ${minutesText(plan.expected_minutes)}`),
       node('p', '', `성공 기준: ${plan.success_criteria}`));
+    const source = state.reflection_links.find(x => x.target_plan_id === plan.id);
+    if (source) add(card, node('p', '', `이전 돌아보기에서 가져온 한 줄: ${source.carried_text}`),
+      recordLink(`이전 계획: ${planName(source.source_plan_id)}`, `plan-${source.source_plan_id}`));
     const actions = node('div', 'actions');
     add(actions, button(plan.id === selectedPlanId ? '선택됨' : '선택·수정', 'tiny', () => { selectedPlanId = plan.id; newPlanMode = false; renderAll(); $('plans').scrollIntoView(); }));
     card.append(actions); list.append(card);
@@ -97,6 +117,8 @@ function renderSelects() {
   reflectionSelect.value = state.plans.some(p => p.id === oldReflection) ? oldReflection : selectedPlanId || '';
   logSelect.replaceChildren(...activeTasks().map(t => option(t.id, `${t.title} · ${planName(t.plan_id)}`)));
   if (activeTasks().some(t => t.id === oldLog)) logSelect.value = oldLog;
+  $('review-plan').replaceChildren(...state.plans.map(p => option(p.id, p.title)));
+  $('review-plan').value = reviewPlanId || '';
 }
 function resetTaskForm() {
   taskForm.reset(); setFormValue(taskForm, 'id', '');
@@ -124,10 +146,13 @@ function filteredTasks() {
     (filter === 'all' || (filter === 'overdue' ? isOverdue(t) : t.status === filter))
   );
   rows.sort((a, b) => {
-    if (sort === 'priority') return priorities[a.priority] - priorities[b.priority] || (a.due_at || '9999').localeCompare(b.due_at || '9999');
-    if (sort === 'created') return b.created_at.localeCompare(a.created_at);
-    if (sort === 'title') return a.title.localeCompare(b.title, 'ko');
-    return (a.due_at || '9999').localeCompare(b.due_at || '9999');
+    const due = () => (a.due_at || '9999').localeCompare(b.due_at || '9999');
+    const name = () => a.title.localeCompare(b.title, 'ko');
+    const id = () => a.id.localeCompare(b.id);
+    if (sort === 'priority') return priorities[a.priority] - priorities[b.priority] || due() || name() || id();
+    if (sort === 'created') return b.created_at.localeCompare(a.created_at) || name() || id();
+    if (sort === 'title') return name() || id();
+    return due() || name() || id();
   });
   return rows;
 }
@@ -135,9 +160,15 @@ function renderTasks() {
   const list = $('task-list'); list.replaceChildren();
   const rows = filteredTasks();
   $('task-result-label').textContent = `정렬: ${$('task-sort').selectedOptions[0].textContent} · 결과 ${rows.length}개`;
+  $('task-sort-rule').textContent = {
+    due: '동률: 이름순 → ID순. 마감이 없으면 마지막에 표시합니다.',
+    priority: '높음 → 보통 → 낮음. 동률: 마감 빠른 순 → 이름순 → ID순.',
+    created: '동률: 이름순 → ID순.', title: '한글 이름순. 동률: ID순.'
+  }[$('task-sort').value];
   if (!rows.length) empty(list, '조건에 맞는 할 일이 없습니다.');
   for (const task of rows) {
     const card = node('article', 'item'); card.id = `task-${task.id}`;
+    card.tabIndex = -1;
     const top = node('div', 'item-top'); add(top, node('strong', '', task.title), badge(statusText(task.status), task.status));
     const badges = node('div', 'meta');
     add(badges, badge(task.category), badge(task.priority), badge(`예상 ${minutesText(task.expected_minutes)}`));
@@ -166,21 +197,36 @@ function renderLogs() {
   if (!state.execution_logs.length) empty(list, '아직 실행 기록이 없습니다.');
   for (const log of state.execution_logs) {
     const card = node('article', 'item'); card.id = `log-${log.id}`;
+    card.tabIndex = -1;
     add(card, node('strong', '', taskName(log.task_id)), node('p', '', `${dateText(log.started_at)} → ${dateText(log.ended_at)}`));
     const meta = node('div', 'meta'); meta.append(badge(`실제 ${minutesText(log.actual_minutes)}`)); card.append(meta);
     if (log.difference_reason) card.append(node('p', '', `달랐던 이유: ${log.difference_reason}`));
     list.append(card);
   }
+  const completions = $('completion-list'); completions.replaceChildren();
+  if (!state.task_completions.length) empty(completions, '아직 완료 이력이 없습니다.');
+  for (const completion of state.task_completions) {
+    const card = node('article', 'item');
+    add(card, node('strong', '', taskName(completion.task_id)), node('p', '', dateText(completion.completed_at)),
+      node('p', 'muted', completion.source === 'existing_status' ? '기존 완료 상태와 마지막 수정 시각에서 복원한 이력' : '최초 완료 처리 이력'));
+    if (activeTasks().some(t => t.id === completion.task_id)) card.append(recordLink('할 일 원본 보기', `task-${completion.task_id}`));
+    completions.append(card);
+  }
 }
 function evidenceRows(kind) {
-  const active = activeTasks();
-  if (kind === 'plans') return state.plans.map(p => `${p.title} · ${p.start_date} ~ ${p.end_date}`);
-  if (kind === 'open_tasks') return active.map(t => `${t.title} · ${statusText(t.status)}`);
-  if (kind === 'completed') return active.filter(t => t.status === 'done').map(t => t.title);
-  if (kind === 'overdue') return active.filter(isOverdue).map(t => `${t.title} · 마감 ${dateText(t.due_at)}`);
-  if (kind === 'blocked') return active.filter(t => t.status === 'blocked').map(t => `${t.title} · ${t.blocked_reason}`);
-  if (kind === 'expected_minutes') return active.map(t => `${t.title} · 예상 ${minutesText(t.expected_minutes)}`);
-  if (kind === 'actual_minutes') return state.execution_logs.filter(l => active.some(t => t.id === l.task_id)).map(l => `${taskName(l.task_id)} · 실제 ${minutesText(l.actual_minutes)}`);
+  const active = reviewTasks();
+  const taskRow = (t, text) => ({ text, target: `task-${t.id}` });
+  if (kind === 'plans') return state.plans.filter(p => p.id === reviewPlanId).map(p => ({text:p.title, target:`plan-${p.id}`}));
+  if (kind === 'open_tasks') return active.map(t => taskRow(t, `${t.title} · ${statusText(t.status)}`));
+  if (kind === 'completed') return active.filter(t => t.status === 'done').map(t => taskRow(t, t.title));
+  if (kind === 'overdue') return active.filter(isOverdue).map(t => taskRow(t, `${t.title} · 마감 ${dateText(t.due_at)}`));
+  if (kind === 'blocked') return active.filter(t => t.blocked_reason.trim()).map(t => taskRow(t, `${t.title} · ${t.blocked_reason}`));
+  const estimates = active.map(t => taskRow(t, `${t.title} · 예상 ${minutesText(t.expected_minutes)}`));
+  const actuals = state.execution_logs.filter(l => active.some(t => t.id === l.task_id))
+    .map(l => ({text:`${taskName(l.task_id)} · 실제 ${minutesText(l.actual_minutes)} · ${dateText(l.started_at)} → ${dateText(l.ended_at)}`, target:`log-${l.id}`}));
+  if (kind === 'expected_minutes') return estimates;
+  if (kind === 'actual_minutes') return actuals;
+  if (kind === 'difference_minutes') return [...estimates, ...actuals];
   return [];
 }
 function renderEvidence() {
@@ -190,20 +236,22 @@ function renderEvidence() {
   const rows = evidenceRows(evidenceKind.key);
   if (!rows.length) { root.append(node('p', 'muted', '해당하는 기록이 없습니다.')); return; }
   const list = node('div', 'list');
-  rows.forEach(row => list.append(node('div', 'item', row)));
+  rows.forEach(row => { const item = node('div', 'item'); item.append(recordLink(row.text, row.target)); list.append(item); });
   root.append(list);
 }
 function renderSummary() {
   const root = $('summary'); root.replaceChildren();
-  const summary = state.summary;
+  $('review-evaluated-at').textContent = `집계 기준 시각: ${dateText(state.evaluated_at)} · 새로고침하면 다시 판정합니다.`;
+  const summary = state.summaries[reviewPlanId] || {};
   const items = [
-    ['plans', '계획 수', `${summary.plans || 0}개`],
-    ['open_tasks', '삭제하지 않은 할 일', `${summary.open_tasks || 0}개`],
+    ['plans', '계획 묶음', `${summary.plans || 0}개`],
+    ['open_tasks', '계획 수(할 일)', `${summary.open_tasks || 0}개`],
     ['completed', '완료', `${summary.completed || 0}개`],
     ['overdue', '지연', `${summary.overdue || 0}개`],
     ['blocked', '막힘', `${summary.blocked || 0}개`],
     ['expected_minutes', '할 일 예상 시간', minutesText(summary.expected_minutes)],
-    ['actual_minutes', '실행한 시간', minutesText(summary.actual_minutes)]
+    ['actual_minutes', '실행한 시간', minutesText(summary.actual_minutes)],
+    ['difference_minutes', '차이(실제 − 예상)', differenceText(summary.difference_minutes)]
   ];
   for (const [key, label, value] of items) {
     const b = node('button', 'stat'); b.type = 'button';
@@ -219,6 +267,16 @@ function renderReflections() {
   for (const r of state.reflections) {
     const card = node('article', 'item');
     add(card, node('strong', '', planName(r.plan_id)), node('p', '', r.next_step || '아직 정하지 않았습니다.'));
+    const links = state.reflection_links.filter(x => x.source_plan_id === r.plan_id);
+    for (const link of links) card.append(recordLink(`이어진 다음 계획: ${planName(link.target_plan_id)}`, `plan-${link.target_plan_id}`));
+    if (r.next_step.trim()) card.append(button('이 한 줄로 다음 계획 작성', 'tiny', () => {
+      newPlanMode = true; fillPlan(null);
+      setFormValue(planForm, 'source_reflection_plan_id', r.plan_id);
+      setFormValue(planForm, 'success_criteria', r.next_step);
+      $('source-reflection-note').textContent = `“${planName(r.plan_id)}”의 돌아보기를 가져왔습니다. 다음 계획의 이름·기간·예상 시간을 직접 정한 뒤 저장하세요.`;
+      $('source-reflection-note').hidden = false;
+      $('plans').scrollIntoView(); planForm.elements.namedItem('title').focus();
+    }));
     list.append(card);
   }
 }
@@ -227,6 +285,7 @@ function renderAll() { renderSelects(); renderPlans(); renderTasks(); renderLogs
 $('new-plan').addEventListener('click', () => { newPlanMode = true; fillPlan(null); planForm.elements.namedItem('title').focus(); });
 $('cancel-task').addEventListener('click', resetTaskForm);
 for (const id of ['task-search', 'task-filter', 'task-sort']) $(id).addEventListener(id === 'task-search' ? 'input' : 'change', renderTasks);
+$('review-plan').addEventListener('change', () => { reviewPlanId = $('review-plan').value; renderSummary(); });
 
 planForm.addEventListener('submit', async event => {
   event.preventDefault();
@@ -235,7 +294,7 @@ planForm.addEventListener('submit', async event => {
   data.expected_minutes = Number(data.expected_minutes);
   await run(async () => {
     const result = await api(id ? `/api/plans/${id}` : '/api/plans', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(data) });
-    selectedPlanId = result.id; newPlanMode = false;
+    selectedPlanId = result.id; reviewPlanId = result.id; newPlanMode = false;
   }, id ? '계획을 저장했습니다. 이전 값은 이력에서 확인할 수 있습니다.' : '계획을 만들었습니다.');
 });
 taskForm.addEventListener('submit', async event => {
@@ -272,3 +331,4 @@ reflectionForm.addEventListener('submit', async event => {
 });
 
 refresh().catch(error => show(`서버 데이터를 읽지 못했습니다: ${error.message}`, true));
+
