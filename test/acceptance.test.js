@@ -83,7 +83,7 @@ test('C13 C28 C32 C36: moving and deleting a task changes the correct scope; exp
   assert.equal(s.summary.open_tasks,0); assert.equal(s.summary.actual_minutes,0);
   assert.equal(s.tasks.length,1); assert.equal(s.execution_logs.length,1); assert.equal(s.task_completions.length,1);
   const ajv = new Ajv2020({strict:false}); addFormats(ajv);
-  const validate = ajv.compile(JSON.parse(readFileSync(new URL('../contracts/pds-schema-v2.json',import.meta.url),'utf8')));
+  const validate = ajv.compile(JSON.parse(readFileSync(new URL('../contracts/pds-schema.v2.json',import.meta.url),'utf8')));
   assert.equal(validate(s),true,JSON.stringify(validate.errors));
 });
 

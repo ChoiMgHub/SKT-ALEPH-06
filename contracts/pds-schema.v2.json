@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ChoiMgHub/SKT-ALEPH-06/contracts/pds-schema-v2.json",
+  "$id": "https://github.com/ChoiMgHub/SKT-ALEPH-06/contracts/pds-schema.v2.json",
   "title": "플랜드씨 다이어리 최종 데이터 명세 v2",
   "description": "첨부 과제 안내의 경로에 맞춰 현재 구현을 문서화한 프로젝트 명세. 별도 공식 원본 명세와의 동일성을 주장하지 않는다.",
   "type": "object",

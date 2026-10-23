@@ -7,7 +7,7 @@
 - 결과물: https://skt-aleph-06.mingi85308530.workers.dev/
 - 소스: https://github.com/ChoiMgHub/SKT-ALEPH-06
 - 데이터베이스: Cloudflare D1 `aleph-diary`
-- 최종 데이터 명세: [contracts/pds-schema-v2.json](contracts/pds-schema-v2.json)
+- 최종 데이터 명세: [contracts/pds-schema.v2.json](contracts/pds-schema.v2.json)
 - 기준별 구현·검증 근거와 배포 확인: [docs/acceptance.md](docs/acceptance.md)
 
 ## 짧은 확인 방법 — 4줄
